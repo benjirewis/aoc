@@ -1,4 +1,4 @@
-testfile = './inputs/input.txt'
+testfile = './inputs/test.txt'
 
 with open(testfile, 'r') as file:
     clicks_to_point_at_zero = 0
@@ -9,26 +9,29 @@ with open(testfile, 'r') as file:
     for line in file:
         new_pos = 0
 
+        passed = False
         if line[0] == 'L': # L is "negative"
             new_pos = curr_pos - int(line[1:])
-            # If we've gone "negative" and we're not _at_ zero (already counted),
-            # increment clicks.
-            if new_pos < 0 and curr_pos != 0:
+            # If we've gone "negative" from positive, increment clicks.
+            if new_pos < 0 and curr_pos > 0:
                 clicks_to_point_at_zero += 1
+                passed = True
         elif line[0] == 'R': # R is "positive"
             new_pos = curr_pos + int(line[1:])
         else:
             raise BaseException('unknown movement')
 
-        # Increment clicks by number of times we can spin by 101.
-        spin_inc = abs(new_pos) // 101
+        # Increment clicks by number of times we can spin by 100.
+        spin_inc = int(abs(new_pos) / 100)
         if spin_inc > 0:
             clicks_to_point_at_zero += spin_inc
+            # Do not double count the movement from negative to positive above.
+            if passed:
+                clicks_to_point_at_zero -= 1
 
-        # Mod new_pos by 100 to get a valid position.
+
+        # Mod new_pos by 100 and potentially increment to get a valid dial position.
         new_pos %= 100
-
-        # If we've gone negative, express that position as a positive (add 100).
         if new_pos < 0:
             new_pos += 100
 
