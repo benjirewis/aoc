@@ -1,0 +1,72 @@
+from math import prod
+from typing import Callable
+
+testfile = './inputs/test.txt'
+
+class Column():
+    starting_x_pos: int
+    operator: Callable[[list[int]], int]
+    # Operands from bottom -> top, but thankfully * and + are commutative.
+    operands: dict[int, int]
+
+    def initialize(self, starting_x_pos: int, operator: Callable[[list[int]], int]):
+        self.starting_x_pos = starting_x_pos
+        self.operator = operator
+        self.operands = {}
+        
+    def process_digit(self, x_pos: int, digit: int):
+        # Calculate x offset by taking x position of digit and subtracting it from our
+        # starting position.
+        x_offset = x_pos - self.starting_x_pos
+
+        try:
+            self.operands[x_offset] += digit * (10 ** (len(str(digit)) - 1))
+            print('x_offset was', x_offset)
+            print('self.operands is', self.operands)
+        except KeyError: 
+            self.operands[x_offset] = digit
+
+    def calculate(self) -> int:
+        return self.operator(list(self.operands.values()))
+
+    def __str__(self) -> str:
+        return f"[starting_x_pos: {self.starting_x_pos}, operator: {'+' if self.operator == sum else '*'}, operands: {self.operands}]"
+    def __repr__(self) -> str:
+        return self.__str__()
+
+with open(testfile, 'r') as file:
+    lines = file.readlines()
+    columns: list[Column] = []
+    for i in range(len(lines[0].split())):
+        columns.append(Column())
+
+    x_pos_to_column_idx = {}
+    for i in range(len(lines)-1,-1,-1):
+        line = lines[i].strip('\n')
+        if i == len(lines)-1:
+            # Process operators to create columns.
+            column_idx = -1
+            for x, char in enumerate(line):
+                if char != ' ':
+                    column_idx += 1
+                    columns[column_idx].initialize(x, sum if char == '+' else prod)
+                x_pos_to_column_idx[x] = column_idx
+            continue
+
+        column_idx = 0
+        for x, char in enumerate(line):
+            if char == ' ':
+                continue
+            try:
+                column_idx = x_pos_to_column_idx[x]
+            except KeyError:
+                # x_pos_to_column_idx may not be filled-in for final digits of last
+                # column; just use last column_idx in this case.
+                x_pos_to_column_idx[x] = column_idx
+            print('PROCESS column_idx', column_idx, 'x_pos', x, 'digit', int(char))
+            columns[column_idx].process_digit(x, int(char))
+           
+    results = [column.calculate() for column in columns]
+    print('Columns are:', columns)
+    print('Results are:', results)
+    print('Sum of results is:', sum(results))
